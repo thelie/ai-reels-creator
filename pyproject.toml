@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-reels-creator"
+version = "0.1.0"
+description = "ИИ-агент для автоматического монтажа Reels / TikTok через Telegram-бота"
+requires-python = ">=3.11"
+dependencies = [
+    "aiogram>=3.13,<4",
+    "anthropic>=1.8",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "sqlalchemy[asyncio]>=2.0",
+    "aiosqlite>=0.20",
+    "numpy>=1.26",
+    "opencv-python-headless>=4.9,<5",  # в 5.x Haar-каскады вынесены в contrib
+    "pillow>=10",
+]
+
+[project.optional-dependencies]
+speech = ["faster-whisper>=1.0"]
+postgres = ["asyncpg>=0.29"]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[project.scripts]
+reels = "reels.cli:main"
+reels-bot = "reels.bot.main:main"
+
+[tool.setuptools.packages.find]
+include = ["reels*"]
+
+[tool.setuptools.package-data]
+"reels.planning" = ["templates/*.json"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "I"]
+ignore = ["B905"]

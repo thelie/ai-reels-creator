@@ -1,0 +1,28 @@
+{
+  "id": "travel_vlog",
+  "name": "Тревел-влог",
+  "description": "Планы 1.5–3 с, плавные переходы, тёплый цвет, подписи мест на сценах. Для путешествий, прогулок, «день в городе».",
+  "shot_min": 1.5,
+  "shot_max": 3.0,
+  "hook_dur": 2.0,
+  "cut_on_beat": true,
+  "transitions": [
+    "fade",
+    "slide_left"
+  ],
+  "transition_every": 3,
+  "transition_dur": 0.35,
+  "zoom": "subtle",
+  "text": {
+    "hook_style": "bold_white",
+    "body_style": "white_on_dark",
+    "cta_style": "black_on_white",
+    "pos": "top",
+    "anim": "fade",
+    "per_scene": true
+  },
+  "captions": {
+    "enabled": true
+  },
+  "color": "warm"
+}

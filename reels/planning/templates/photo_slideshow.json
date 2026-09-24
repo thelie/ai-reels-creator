@@ -1,0 +1,30 @@
+{
+  "id": "photo_slideshow",
+  "name": "Слайд-шоу под бит",
+  "description": "Фото с эффектом Ken Burns, смена в бит, мягкие переходы. Для подборок фото, «было/стало», воспоминаний.",
+  "shot_min": 1.0,
+  "shot_max": 2.2,
+  "hook_dur": 1.5,
+  "cut_on_beat": true,
+  "transitions": [
+    "dissolve",
+    "fade",
+    "slide_up"
+  ],
+  "transition_every": 2,
+  "transition_dur": 0.3,
+  "zoom": "subtle",
+  "photo_zoom": 1.15,
+  "text": {
+    "hook_style": "bold_white_caps",
+    "body_style": "minimal",
+    "cta_style": "black_on_white",
+    "pos": "bottom",
+    "anim": "fade",
+    "per_scene": true
+  },
+  "captions": {
+    "enabled": false
+  },
+  "color": "film"
+}

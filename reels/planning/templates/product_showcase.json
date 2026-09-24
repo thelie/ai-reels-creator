@@ -1,0 +1,28 @@
+{
+  "id": "product_showcase",
+  "name": "Показ товара",
+  "description": "Хук с результатом, детали товара крупным планом, текстовые преимущества на каждой сцене, CTA в конце. Для продаж, распаковок, обзоров.",
+  "shot_min": 1.0,
+  "shot_max": 2.5,
+  "hook_dur": 1.5,
+  "cut_on_beat": true,
+  "transitions": [
+    "zoom_in",
+    "slide_left"
+  ],
+  "transition_every": 3,
+  "transition_dur": 0.25,
+  "zoom": "subtle",
+  "text": {
+    "hook_style": "yellow_punch",
+    "body_style": "black_on_white",
+    "cta_style": "yellow_punch",
+    "pos": "center",
+    "anim": "pop",
+    "per_scene": true
+  },
+  "captions": {
+    "enabled": true
+  },
+  "color": "punchy"
+}

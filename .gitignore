@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/
+*.egg-info/
+.env
+assets/music/*
+!assets/music/README.md

@@ -1,0 +1,29 @@
+{
+  "id": "dynamic_montage",
+  "name": "Динамичный монтаж",
+  "description": "Быстрые склейки в бит музыки, короткие планы 0.5–1.5 с, яркий цвет, крупный текст-хук. Подходит для событий, спорта, путешествий, «атмосферных» роликов.",
+  "shot_min": 0.5,
+  "shot_max": 1.5,
+  "hook_dur": 1.2,
+  "cut_on_beat": true,
+  "transitions": [
+    "whip",
+    "zoom_in",
+    "flash"
+  ],
+  "transition_every": 4,
+  "transition_dur": 0.2,
+  "zoom": "punch",
+  "text": {
+    "hook_style": "yellow_punch",
+    "body_style": "bold_white_caps",
+    "cta_style": "yellow_punch",
+    "pos": "center",
+    "anim": "pop",
+    "per_scene": false
+  },
+  "captions": {
+    "enabled": false
+  },
+  "color": "punchy"
+}

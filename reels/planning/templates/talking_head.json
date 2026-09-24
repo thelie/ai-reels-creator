@@ -1,0 +1,28 @@
+{
+  "id": "talking_head",
+  "name": "Говорящая голова + B-roll",
+  "description": "Человек говорит в кадр, сохраняется исходный звук, крупные караоке-субтитры, вставки B-roll между фразами. Для экспертных, блогерских, обучающих роликов.",
+  "shot_min": 1.5,
+  "shot_max": 6.0,
+  "hook_dur": 2.5,
+  "cut_on_beat": false,
+  "transitions": [],
+  "transition_every": 0,
+  "zoom": "punch",
+  "text": {
+    "hook_style": "bold_white_caps",
+    "body_style": "white_on_dark",
+    "cta_style": "yellow_punch",
+    "pos": "top",
+    "anim": "pop",
+    "per_scene": false
+  },
+  "captions": {
+    "enabled": true,
+    "style": "karaoke_yellow",
+    "words_per_screen": 3
+  },
+  "color": "none",
+  "prefer_speech": true,
+  "music_gain_db": -10.0
+}

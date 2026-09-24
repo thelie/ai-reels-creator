@@ -1,0 +1,29 @@
+{
+  "id": "aesthetic_calm",
+  "name": "Эстетичный спокойный",
+  "description": "Длинные планы 2.5–4 с, растворения, приглушённый киношный цвет, минимум текста. Для атмосферы, природы, интерьеров, кафе.",
+  "shot_min": 2.5,
+  "shot_max": 4.0,
+  "hook_dur": 2.5,
+  "cut_on_beat": true,
+  "transitions": [
+    "dissolve",
+    "fade"
+  ],
+  "transition_every": 1,
+  "transition_dur": 0.6,
+  "zoom": "subtle",
+  "photo_zoom": 1.08,
+  "text": {
+    "hook_style": "minimal",
+    "body_style": "minimal",
+    "cta_style": "minimal",
+    "pos": "center",
+    "anim": "fade",
+    "per_scene": false
+  },
+  "captions": {
+    "enabled": false
+  },
+  "color": "film"
+}

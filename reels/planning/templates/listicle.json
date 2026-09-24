@@ -1,0 +1,27 @@
+{
+  "id": "listicle",
+  "name": "Топ-N / список",
+  "description": "Нумерованные пункты: каждый пункт — сцена 2–3 с с крупным текстом «1. …», «2. …». Для подборок, советов, лайфхаков.",
+  "shot_min": 2.0,
+  "shot_max": 3.0,
+  "hook_dur": 2.0,
+  "cut_on_beat": true,
+  "transitions": [
+    "slide_up"
+  ],
+  "transition_every": 1,
+  "transition_dur": 0.25,
+  "zoom": "subtle",
+  "text": {
+    "hook_style": "yellow_punch",
+    "body_style": "bold_white_caps",
+    "cta_style": "black_on_white",
+    "pos": "center",
+    "anim": "pop",
+    "per_scene": true
+  },
+  "captions": {
+    "enabled": false
+  },
+  "color": "punchy"
+}
