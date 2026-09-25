@@ -10,8 +10,11 @@ from tests.media_fixtures import make_click_track, make_photo, make_video
 @pytest.fixture(autouse=True)
 def _no_llm(monkeypatch):
     """Тесты не ходят в API: LLM выключена, работают эвристики."""
+    from reels.llm import client as llm
+
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
+    monkeypatch.setattr(llm, "available", lambda: False)  # даже если в .env есть ключ
 
 
 @pytest.fixture(scope="session")

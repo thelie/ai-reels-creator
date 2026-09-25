@@ -403,7 +403,8 @@ class ReelsService:
         for i, (sc, clip) in enumerate(zip(scenes, edl.clips), 1):
             seg = segs[sc.segment_id]
             desc = seg.get("description", "")
-            txt = f" — «{sc.text}»" if sc.text else ""
+            shown = sc.text if not (i == 1 and draft.hook_text) else ""  # на первой сцене виден хук
+            txt = f" — «{shown}»" if shown else ""
             audio = " 🔊" if clip.keep_audio else ""
             lines.append(f"{i}. {clip.at:.1f}–{clip.end:.1f}с {desc[:60]}{txt}{audio}")
             if seg.get("keyframe") and len(keyframes) < 10 and seg["keyframe"] not in keyframes:

@@ -52,6 +52,10 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
+    # ANTHROPIC_API_KEY и прочие переменные без префикса SDK читает из окружения — подгружаем .env туда
+    from dotenv import load_dotenv
+
+    load_dotenv(".env", override=False)
     s = Settings()
     s.data_dir.mkdir(parents=True, exist_ok=True)
     return s
