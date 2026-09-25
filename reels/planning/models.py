@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from ..edl.models import TextAnim, TextPosition, TransitionType
+from ..edl.models import ClipEffect, TextAnim, TextPosition, TransitionType
 
 
 class Slot(BaseModel):
@@ -15,6 +15,7 @@ class Slot(BaseModel):
     role: str = "body"
     dur: float
     hint: str = ""
+    effect: ClipEffect = "none"
 
 
 class TemplateText(BaseModel):
@@ -24,6 +25,10 @@ class TemplateText(BaseModel):
     pos: TextPosition = "center"
     anim: TextAnim = "pop"
     per_scene: bool = True  # показывать тексты сцен (а не только хук и CTA)
+    # timed — хук на первые секунды; sticker — двухстрочный стикер-заголовок на весь ролик
+    hook_mode: Literal["timed", "sticker"] = "timed"
+    sticker_example: str = ""  # стикер из референса, образец для LLM
+    sticker_y: float = 0.62
 
 
 class TemplateCaptions(BaseModel):
@@ -65,12 +70,15 @@ class PlanScene(BaseModel):
     duration: float = Field(description="желаемая длительность сцены, секунды")
     text: str = Field(description="текст на экране для этой сцены, пустая строка — без текста")
     keep_audio: bool = Field(description="оставить исходный звук (речь в кадре)")
+    effect: ClipEffect = Field("none", description="эффект кадра: none | bw (чёрно-белый) | inset (уменьшенный кадр на "
+                               "чёрном фоне)")
 
 
 class PlanDraft(BaseModel):
     template_id: str
     title: str = Field(description="рабочее название ролика")
-    hook_text: str = Field(description="цепляющий текст на первые 1–3 секунды, до 60 символов")
+    hook_text: str = Field(description="цепляющий текст на первые 1–3 секунды, до 60 символов; для стикера — "
+                           "две строки через \\n")
     scenes: list[PlanScene]
     cta_text: str = Field(description="призыв к действию в конце, пустая строка — без него")
     caption: str = Field(description="подпись к публикации")

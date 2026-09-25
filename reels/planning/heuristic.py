@@ -60,6 +60,10 @@ def plan(analyses: list[AssetAnalysis], template: StyleTemplate, duration: float
     if template.slots:
         n = len(template.slots)
         slot_durs = [s.dur for s in template.slots]
+        if template.prefer_speech and len(segs) < n:
+            # Речь не повторяем: слотов больше, чем фрагментов, — берём первые слоты
+            n = len(segs)
+            slot_durs = slot_durs[:n]
         k = duration / sum(slot_durs) if sum(slot_durs) else 1.0
         target = [d * k for d in slot_durs]
     else:
@@ -112,7 +116,9 @@ def plan(analyses: list[AssetAnalysis], template: StyleTemplate, duration: float
         if keep_audio:
             dur = max(dur, min(seg.dur, template.shot_max))
         role = "hook" if i == 0 else ("cta" if i == n - 1 and cta_text else ("talking" if keep_audio else "body"))
+        effect = template.slots[i].effect if i < len(template.slots) else "none"
         scenes.append(PlanScene(segment_id=seg.id, role=role, duration=round(dur, 2), text=text_for.get(i, ""),
+                                effect=effect,
                                 keep_audio=keep_audio))
 
     title = hook_text or "Новый ролик"

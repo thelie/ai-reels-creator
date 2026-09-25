@@ -38,6 +38,11 @@ XFADE = {
 }
 
 
+INSET_SCALE = 0.5
+INSET_CENTER_Y = 0.34
+DEFAULT_FONTS_DIR = Path(__file__).resolve().parents[2] / "assets" / "fonts"
+
+
 @dataclass
 class RenderProfile:
     quality: Quality
@@ -119,6 +124,13 @@ def clip_filter(clip: VideoClip, src: Source, w: int, h: int, fps: int, oversamp
             f":x='max(0,min(iw-iw/zoom,{ax:.4f}*iw-iw/zoom/2))'"
             f":y='max(0,min(ih-ih/zoom,{ay:.4f}*ih-ih/zoom/2))'"
         )
+    if clip.effect == "bw":
+        parts.append("hue=s=0,eq=contrast=1.08")
+    elif clip.effect == "inset":
+        # Уменьшенный кадр на чёрном фоне, чуть выше центра (под ним остаётся место для стикера)
+        iw, ih = _even(w * INSET_SCALE), _even(h * INSET_SCALE)
+        y0 = int(max(0, min(h - ih, h * INSET_CENTER_Y - ih / 2)))
+        parts.append(f"scale={iw}:{ih},pad={w}:{h}:{(w - iw) // 2}:{y0}:black")
     parts += [
         "tpad=stop_mode=clone:stop_duration=2",
         f"trim=duration={clip.dur:.4f}",
@@ -212,7 +224,8 @@ def render(edl: EDL, out_path: Path, work_dir: Path, quality: Quality = "final",
         ass_path = work_dir / f"overlay_{quality}.ass"
         ass_path.write_text(ass_text, encoding="utf-8")
         opt = f"ass='{_ff_escape(ass_path)}'"
-        if fonts_dir and fonts_dir.exists():
+        fonts_dir = fonts_dir or DEFAULT_FONTS_DIR
+        if fonts_dir.exists():
             opt += f":fontsdir='{_ff_escape(fonts_dir)}'"
         post.append(opt)
     post += [f"trim=duration={total:.3f}", "setpts=PTS-STARTPTS", "format=yuv420p"]

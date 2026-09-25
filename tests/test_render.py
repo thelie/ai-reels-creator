@@ -49,3 +49,21 @@ def test_clip_cache_reused(media, tmp_path):
 def test_vertical_source_keeps_orientation(media, tmp_path):
     analyses, _ = asyncio.run(analyze_assets([("v", media["vertical"], "video")], tmp_path))
     assert (analyses[0].width, analyses[0].height) == (720, 1280)
+
+
+def test_effects_and_sticker_fonts(media, tmp_path):
+    from reels.render.ass import build_ass
+
+    p = probe(media["photo"])
+    src = Source(asset_id="p", kind="photo", path=str(media["photo"]), width=p.width, height=p.height)
+    edl = EDL(
+        sources={"p": src},
+        clips=[VideoClip(id="c1", asset_id="p", at=0, dur=1.0, effect="bw"),
+               VideoClip(id="c2", asset_id="p", at=1.0, dur=1.0, effect="inset")],
+        texts=[TextOverlay(at=0, dur=1.9, content="Девочки, ну это", style="sticker_script", y=0.58),
+               TextOverlay(at=0, dur=1.9, content="находка", style="sticker_caps", y=0.63)],
+    )
+    ass = build_ass(edl, "DejaVu Sans")
+    assert "Marck Script" in ass and "Russo One" in ass and "НАХОДКА" in ass
+    out = renderer.render(edl, tmp_path / "fx.mp4", tmp_path / "w", "preview")
+    assert qa.check(out, 2.0, (540, 960))["size"] == [540, 960]

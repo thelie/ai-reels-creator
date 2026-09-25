@@ -66,8 +66,14 @@ def _template_brief(t: StyleTemplate) -> str:
         "texts_per_scene": t.text.per_scene,
         "keeps_speech": t.prefer_speech,
     }
+    if t.text.hook_mode == "sticker":
+        brief["sticker_example"] = t.text.sticker_example
     if t.slots:
-        brief["slots"] = [{"role": s.role, "dur": round(s.dur, 2), "hint": s.hint} for s in t.slots]
+        brief["slots"] = [
+            {"role": s.role, "dur": round(s.dur, 2), "hint": s.hint}
+            | ({"effect": s.effect} if s.effect != "none" else {})
+            for s in t.slots
+        ]
     return json.dumps(brief, ensure_ascii=False)
 
 
@@ -82,8 +88,22 @@ async def plan(analyses: list[AssetAnalysis], duration: float, script: str = "",
     if template:
         parts.append(f"Шаблон стиля (использовать его, template_id={template.id}):\n{_template_brief(template)}")
         if template.slots:
-            parts.append("Это структура ролика-референса: сделай по одной сцене на каждый слот, "
-                         "подбирая фрагменты, похожие по смыслу и крупности на подсказки слотов.")
+            parts.append(
+                "Это структура ролика-референса: повтори её ритм, порядок частей и приёмы, подбирая фрагменты, "
+                "похожие по смыслу и крупности на подсказки слотов. Эффекты (effect) ставь там же, где они в "
+                "слотах референса, особенно на хуке. Если материала меньше, чем слотов, не повторяй фрагменты "
+                "с речью — сцен может быть меньше. Речь в кадре не обрезай на полуслове, сохраняй логику рассказа."
+            )
+        if template.text.hook_mode == "sticker":
+            parts.append(
+                "В референсе на всём ролике висит стикер-заголовок: "
+                f"«{template.text.sticker_example}». Придумай такой же по форме для этого материала и положи в "
+                "hook_text: первая строка — короткая разговорная фраза (2–4 слова), вторая — 1–2 слова, "
+                "главная эмоция или суть; строки через \\n. Не копируй текст референса."
+            )
+        if template.text.body_style == "label_script":
+            parts.append("Тексты сцен (text) — редкие подписи разделов, как в референсе (1–3 слова, например смена "
+                         "темы); у большинства сцен text пустой.")
     else:
         parts.append(f"Выбери подходящий шаблон стиля (template_id) из каталога:\n{_catalog()}")
     if reference and reference.transcript:
@@ -145,44 +165,70 @@ def _sanitize(draft: PlanDraft, analyses: list[AssetAnalysis], template: StyleTe
     return draft.model_copy(update={"scenes": scenes, "template_id": tid})
 
 
+MAX_REF_FRAMES = 32
+
+
 async def describe_reference(ref: ReferenceAnalysis) -> ReferenceAnalysis:
-    """Кадры референса -> роли и описания слотов (быстрая модель). Без LLM возвращает как есть."""
+    """Кадры референса -> роли, эффекты и тексты поверх видео. Без LLM возвращает как есть."""
+    from typing import Literal
+
     from pydantic import BaseModel
+
+    from ..analysis.models import OverlayText
 
     class RefShot(BaseModel):
         index: int
         description: str
-        shot_type: str
+        shot_type: Literal["close_up", "medium", "wide", "detail", "unknown"]
         has_text: bool
+        effect: Literal["none", "bw", "inset"]
 
     class RefDescription(BaseModel):
         shots: list[RefShot]
+        overlay_texts: list[OverlayText]
+        has_captions: bool
         summary: str
 
     if not llm.available() or not ref.shots:
         return ref
-    shots = ref.shots[:24]
+    # Равномерная выборка по всему ролику, если планов больше лимита
+    n = len(ref.shots)
+    idx = list(range(n)) if n <= MAX_REF_FRAMES else sorted({round(k * (n - 1) / (MAX_REF_FRAMES - 1))
+                                                              for k in range(MAX_REF_FRAMES)})
     content: list[dict] = []
-    for i, s in enumerate(shots):
-        content.append({"type": "text", "text": f"План {i} ({s.dur:.1f} с):"})
-        content.append(llm.image_block(s.keyframe, 512))
+    for j, i in enumerate(idx):
+        s = ref.shots[i]
+        content.append({"type": "text", "text": f"Кадр {j} (план {i}, {s.start:.1f}–{s.start + s.dur:.1f} с):"})
+        content.append(llm.image_block(s.keyframe, 640))
+    if ref.transcript:
+        content.append({"type": "text", "text": f"Речь в ролике: {ref.transcript[:1500]}"})
     content.append({
         "type": "text",
-        "text": "Это кадры ролика-референса по порядку. Для каждого плана: что в кадре и зачем он в структуре "
-                "(до 15 слов), крупность (close_up/medium/wide/detail), есть ли текст поверх видео. "
-                "В summary опиши структуру и стиль ролика (хук, развитие, финал, темп) в 2–3 предложениях — "
-                "это будет инструкцией монтажёру, который сделает похожий ролик из другого материала.",
+        "text": (
+            "Это кадры ролика-референса по порядку (по одному на план). Разбери монтаж так, чтобы другой монтажёр "
+            "мог повторить стиль на другом материале.\n"
+            "shots — для каждого кадра (index = номер кадра): что в кадре и зачем он в структуре (до 15 слов), "
+            "крупность, есть ли текст поверх видео, эффект: bw — чёрно-белый, inset — видео уменьшено и стоит "
+            "на чёрном/цветном фоне, none — обычный полноэкранный кадр.\n"
+            "overlay_texts — различные надписи поверх видео (без повторов): persistent_title — стикер/заголовок, "
+            "который висит на многих кадрах подряд (если он из нескольких строк разными шрифтами — строки через "
+            "\\n, как на экране); section_label — подпись раздела на части кадров; hook, cta, other.\n"
+            "has_captions — есть ли субтитры речи (текст, меняющийся вместе со словами).\n"
+            "summary — структура и стиль (хук, развитие, финал, темп, приёмы) в 2–4 предложениях."
+        ),
     })
     try:
-        res = await llm.parse(model=get_settings().llm_vision_model, system="Ты анализируешь монтаж коротких видео.",
-                              content=content, output_format=RefDescription, max_tokens=4000)
+        res = await llm.parse(model=get_settings().llm_planner_model, system="Ты анализируешь монтаж коротких видео.",
+                              content=content, output_format=RefDescription, max_tokens=8000, effort="low")
     except llm.LLMError as e:
         log.warning("reference description failed: %s", e)
         return ref
     new_shots = list(ref.shots)
     for item in res.shots:
-        if 0 <= item.index < len(shots):
-            st = item.shot_type if item.shot_type in {"close_up", "medium", "wide", "detail"} else "unknown"
-            new_shots[item.index] = new_shots[item.index].model_copy(
-                update={"description": item.description, "shot_type": st, "has_text": item.has_text})
-    return ref.model_copy(update={"shots": new_shots, "summary": res.summary})
+        if 0 <= item.index < len(idx):
+            i = idx[item.index]
+            new_shots[i] = new_shots[i].model_copy(update={
+                "description": item.description, "shot_type": item.shot_type, "has_text": item.has_text,
+                "effect": item.effect})
+    return ref.model_copy(update={"shots": new_shots, "summary": res.summary, "overlay_texts": res.overlay_texts,
+                                  "has_captions": res.has_captions})

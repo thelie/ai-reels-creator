@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 TransitionType = Literal["fade", "dissolve", "slide_left", "slide_up", "zoom_in", "whip", "flash"]
 TextPosition = Literal["top", "center", "bottom"]
 TextAnim = Literal["none", "fade", "pop"]
+ClipEffect = Literal["none", "bw", "inset"]  # inset — уменьшенный кадр на чёрном фоне
 
 
 class Canvas(BaseModel):
@@ -63,6 +64,7 @@ class VideoClip(BaseModel):
     keep_audio: bool = False
     audio_gain_db: float = 0.0
     transition_in: Transition | None = None
+    effect: ClipEffect = "none"
     role: str = ""
 
     @property
@@ -80,6 +82,7 @@ class TextOverlay(BaseModel):
     content: str
     style: str = "bold_white"
     pos: TextPosition = "center"
+    y: float | None = Field(None, ge=0, le=1)  # точная вертикаль центра (доля высоты), вместо pos
     anim: TextAnim = "pop"
 
 

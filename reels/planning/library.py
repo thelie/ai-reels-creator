@@ -49,9 +49,19 @@ def from_reference(ref: ReferenceAnalysis, base: StyleTemplate | None = None) ->
     slots: list[Slot] = []
     for i, shot in enumerate(ref.shots):
         role = "hook" if i == 0 else ("cta" if i == len(ref.shots) - 1 and len(ref.shots) > 2 else "body")
-        slots.append(Slot(role=role, dur=max(0.4, shot.dur), hint=shot.description))
+        slots.append(Slot(role=role, dur=max(0.4, shot.dur), hint=shot.description, effect=shot.effect))
     durs = [s.dur for s in slots] or [base.avg_shot]
     fast = sum(durs) / len(durs) < 1.3
+    text = base.text if ref.shots and any(s.has_text for s in ref.shots) else TemplateText(per_scene=False)
+    sticker = next((t.text for t in ref.overlay_texts if t.role == "persistent_title"), "")
+    labels = [t.text for t in ref.overlay_texts if t.role == "section_label"]
+    if sticker:
+        text = text.model_copy(update={"hook_mode": "sticker", "sticker_example": sticker,
+                                       "hook_style": "sticker_caps"})
+    if labels:
+        text = text.model_copy(update={"per_scene": True, "body_style": "label_script", "pos": "top",
+                                       "anim": "fade"})
+    captions = ref.has_captions if ref.has_captions is not None else ref.has_speech
     return base.model_copy(
         update={
             "id": "reference",
@@ -65,8 +75,8 @@ def from_reference(ref: ReferenceAnalysis, base: StyleTemplate | None = None) ->
             "hook_dur": durs[0],
             "cut_on_beat": ref.cut_on_beat_ratio >= 0.5,
             "transitions": [] if fast else base.transitions,
-            "text": base.text if ref.shots and any(s.has_text for s in ref.shots) else TemplateText(per_scene=False),
-            "captions": TemplateCaptions(enabled=ref.has_speech),
+            "text": text,
+            "captions": TemplateCaptions(enabled=captions),
             "slots": slots,
         }
     )

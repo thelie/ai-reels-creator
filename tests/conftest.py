@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
+
+# Распознавание речи в тестах выключено: медленно и требует скачивания модели
+os.environ["REELS_SPEECH_ENABLED"] = "false"
 
 from tests.media_fixtures import make_click_track, make_photo, make_video
 

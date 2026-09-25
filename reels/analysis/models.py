@@ -58,6 +58,14 @@ class ReferenceShot(BaseModel):
     description: str = ""
     shot_type: ShotType = "unknown"
     has_text: bool = False
+    effect: Literal["none", "bw", "inset"] = "none"
+
+
+class OverlayText(BaseModel):
+    """Текст поверх видео в референсе."""
+
+    text: str
+    role: Literal["persistent_title", "section_label", "hook", "cta", "other"]
 
 
 class ReferenceAnalysis(BaseModel):
@@ -70,3 +78,5 @@ class ReferenceAnalysis(BaseModel):
     has_speech: bool = False
     transcript: str = ""
     summary: str = ""  # описание структуры/стиля от LLM (если доступна)
+    overlay_texts: list[OverlayText] = Field(default_factory=list)
+    has_captions: bool | None = None  # None — неизвестно (без LLM)

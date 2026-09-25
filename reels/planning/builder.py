@@ -189,6 +189,7 @@ def build_edl(draft: PlanDraft, media: MediaIndex, template: StyleTemplate, dura
                 reframe=Reframe(anchor_x=seg.anchor_x, anchor_y=seg.anchor_y, zoom_from=zf, zoom_to=zt),
                 keep_audio=k,
                 transition_in=tds[i],
+                effect=sc.effect,
                 role=sc.role,
             )
         )
@@ -215,16 +216,28 @@ def build_edl(draft: PlanDraft, media: MediaIndex, template: StyleTemplate, dura
         return "top" if clip.id in captioned else tt.pos
 
     text_end = 0.0
-    if draft.hook_text.strip():
+    hook = draft.hook_text.replace("\\n", "\n").strip()
+    timed_hook = bool(hook) and tt.hook_mode == "timed"
+    if hook and tt.hook_mode == "sticker":
+        # Стикер на весь ролик: рукописная фраза сверху, крупное слово заглавными под ней
+        lines = [ln.strip() for ln in hook.split("\n") if ln.strip()]
+        script, caps = (lines[0], " ".join(lines[1:])) if len(lines) > 1 else ("", lines[0])
+        dur = round(total - 0.02, 3)
+        if script:
+            texts.append(TextOverlay(at=0.0, dur=dur, content=script[:60], style="sticker_script",
+                                     y=tt.sticker_y - 0.045, anim="fade"))
+        texts.append(TextOverlay(at=0.0, dur=dur, content=caps[:40], style="sticker_caps",
+                                 y=tt.sticker_y + 0.01, anim="pop"))
+    elif timed_hook:
         hook_end = min(total, max(1.2, min(cuts[1] if len(cuts) > 2 else total, 3.5)))
-        texts.append(TextOverlay(at=0.0, dur=round(hook_end - 0.02, 3), content=draft.hook_text.strip(),
+        texts.append(TextOverlay(at=0.0, dur=round(hook_end - 0.02, 3), content=hook,
                                  style=tt.hook_style, pos=pos_for(clips[0]), anim=tt.anim))
         text_end = hook_end
     cta = draft.cta_text.strip()
     for i, (sc, c) in enumerate(zip(scenes, clips)):
         is_last = i == len(clips) - 1
         content = cta if (is_last and cta) else sc.text.strip()
-        if not content or (i == 0 and draft.hook_text.strip()):
+        if not content or (i == 0 and timed_hook):
             continue
         start = max(cuts[i], text_end)
         end = cuts[i + 1] - 0.05

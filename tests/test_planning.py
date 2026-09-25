@@ -81,3 +81,26 @@ def test_reference_template(analyzed):
     assert len(draft.scenes) == 4
     edl = build_edl(draft, mi, tpl, 6)
     assert errors(validate(edl, 6)) == []
+
+
+def test_reference_sticker_labels_and_effects(analyzed):
+    from reels.analysis.models import OverlayText
+
+    analyses, mi = analyzed
+    ref = ReferenceAnalysis(
+        duration=6, shots=[ReferenceShot(start=i * 1.5, dur=1.5, effect="bw" if i == 0 else "none") for i in range(4)],
+        overlay_texts=[OverlayText(text="Девочки, ну это\nНАХОДКА", role="persistent_title"),
+                       OverlayText(text="немного ASMR", role="section_label")],
+        has_captions=False)
+    tpl = library.from_reference(ref)
+    assert tpl.text.hook_mode == "sticker" and tpl.text.body_style == "label_script"
+    assert not tpl.captions.enabled and tpl.slots[0].effect == "bw"
+    draft = heuristic.plan(analyses, tpl, 6, "Готовлю раз\\nНА НЕДЕЛЮ")
+    assert draft.scenes[0].effect == "bw"
+    draft = draft.model_copy(update={"hook_text": "Готовлю раз\nНА НЕДЕЛЮ"})
+    edl = build_edl(draft, mi, tpl, 6)
+    sticker = [t for t in edl.texts if t.style.startswith("sticker_")]
+    assert [t.content for t in sticker] == ["Готовлю раз", "НА НЕДЕЛЮ"]
+    assert all(t.at == 0 and abs(t.at + t.dur - edl.duration) < 0.05 for t in sticker)
+    assert edl.clips[0].effect == "bw"
+    assert errors(validate(edl, 6)) == []

@@ -60,8 +60,8 @@ def _style_line(name: str, st: TextStyle, font: str) -> str:
     else:
         border_style, outline_col = 1, ass_color(st.outline)
     return (
-        f"Style: {name},{font},{st.font_size},{ass_color(st.primary)},{ass_color(st.highlight)},"
-        f"{outline_col},&H80000000,{-1 if st.bold else 0},0,0,0,100,100,0,0,"
+        f"Style: {name},{st.font or font},{st.font_size},{ass_color(st.primary)},{ass_color(st.highlight)},"
+        f"{outline_col},&H80000000,{-1 if st.bold else 0},0,0,0,100,100,0,{st.angle:g},"
         f"{border_style},{st.outline_w},0,5,0,0,0,1"
     )
 
@@ -78,7 +78,7 @@ def _text_event(t: TextOverlay, w: int, h: int) -> str:
     cx, avail = _layout(w)
     content = t.content.upper() if st.uppercase else t.content
     lines = wrap(escape(content), st.font_size, avail)
-    y = TEXT_POS_Y[t.pos] * h
+    y = (t.y if t.y is not None else TEXT_POS_Y[t.pos]) * h
     # Не заезжаем в нижнюю безопасную зону
     block_h = len(lines) * st.font_size * 1.15
     y = min(y, h * (1 - SAFE_ZONES["bottom"]) - block_h / 2)

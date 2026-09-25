@@ -33,7 +33,7 @@ class Settings(BaseSettings):
 
     # Библиотеки ассетов
     music_dir: Path = Path("assets/music")
-    fonts_dir: Path = Path("assets/fonts")
+    fonts_dir: Path = Path(__file__).resolve().parents[1] / "assets" / "fonts"
     font_name: str = "DejaVu Sans"
 
     # Ограничения
@@ -42,6 +42,7 @@ class Settings(BaseSettings):
 
     # Распознавание речи (faster-whisper, опционально)
     whisper_model: str = "small"
+    speech_enabled: bool = True
 
     @property
     def db_url(self) -> str:

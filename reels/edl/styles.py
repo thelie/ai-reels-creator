@@ -17,6 +17,8 @@ class TextStyle:
     box_alpha: float = 0.0  # 0 — непрозрачная
     uppercase: bool = False
     highlight: str = "#FFE600"  # цвет активного слова (для субтитров)
+    font: str | None = None  # None — шрифт по умолчанию (REELS_FONT_NAME)
+    angle: float = 0.0  # наклон, градусы (для «рукописных» стикеров)
 
 
 TEXT_STYLES: dict[str, TextStyle] = {
@@ -30,6 +32,14 @@ TEXT_STYLES: dict[str, TextStyle] = {
         font_size=64, primary="#FFFFFF", outline="#000000", outline_w=14, box=True, box_color="#000000", box_alpha=0.35
     ),
     "minimal": TextStyle(font_size=60, primary="#FFFFFF", outline="#000000", outline_w=2, bold=False),
+    # Стикер-заголовок из двух строк: рукописная фраза + крупное слово заглавными
+    "sticker_script": TextStyle(font_size=84, primary="#7CF0B0", outline="#0B3D2A", outline_w=3, bold=False,
+                                font="Marck Script", angle=4),
+    "sticker_caps": TextStyle(font_size=104, primary="#FF8AE2", outline="#3A0B4A", outline_w=6, bold=False,
+                              uppercase=True, font="Russo One"),
+    # Подпись раздела («немного ASMR»)
+    "label_script": TextStyle(font_size=92, primary="#FFFFFF", outline="#000000", outline_w=3, bold=False,
+                              font="Marck Script"),
     # Стили субтитров
     "karaoke_yellow": TextStyle(font_size=76, primary="#FFFFFF", outline="#000000", outline_w=6, uppercase=True),
     "karaoke_green": TextStyle(
