@@ -95,3 +95,10 @@ async def test_duplicate_asset_ignored(svc, media, tmp_path):
     shutil.copy2(media["photo"], copy2)
     assert await svc.add_asset(p.id, "photo", copy1, unique_id="u1")
     assert await svc.add_asset(p.id, "photo", copy2, unique_id="u1") is None
+
+
+async def test_concurrent_updates_share_one_project(svc):
+    import asyncio
+
+    projects = await asyncio.gather(*(svc.current_project(tg_id=77, chat_id=77) for _ in range(8)))
+    assert len({p.id for p in projects}) == 1

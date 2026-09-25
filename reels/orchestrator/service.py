@@ -66,7 +66,15 @@ class ReelsService:
     def lock(self, pid: str) -> asyncio.Lock:
         return self._locks.setdefault(pid, asyncio.Lock())
 
+    def user_lock(self, tg_id: int) -> asyncio.Lock:
+        # Альбом приходит несколькими апдейтами одновременно — без блокировки каждый создал бы свой проект
+        return self._locks.setdefault(f"user:{tg_id}", asyncio.Lock())
+
     async def new_project(self, tg_id: int, chat_id: int = 0) -> Project:
+        async with self.user_lock(tg_id):
+            return await self._new_project(tg_id, chat_id)
+
+    async def _new_project(self, tg_id: int, chat_id: int = 0) -> Project:
         async with self.db.session() as s:
             user = await self.db.get_or_create_user(s, tg_id)
             p = Project(user_id=user.id, chat_id=chat_id, duration=self.settings.default_duration_s,
@@ -76,6 +84,10 @@ class ReelsService:
             return await self.get(p.id)
 
     async def current_project(self, tg_id: int, chat_id: int = 0) -> Project:
+        async with self.user_lock(tg_id):
+            return await self._current_project(tg_id, chat_id)
+
+    async def _current_project(self, tg_id: int, chat_id: int = 0) -> Project:
         async with self.db.session() as s:
             user = await self.db.get_or_create_user(s, tg_id)
             await s.commit()
@@ -85,7 +97,7 @@ class ReelsService:
                 )
             ).scalar_one_or_none()
         if p is None:
-            return await self.new_project(tg_id, chat_id)
+            return await self._new_project(tg_id, chat_id)
         return p
 
     async def get(self, pid: str) -> Project:

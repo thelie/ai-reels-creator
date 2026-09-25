@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import JSON, BigInteger, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -109,7 +110,10 @@ class Database:
     async def get_or_create_user(self, s: AsyncSession, tg_id: int) -> User:
         user = (await s.execute(select(User).where(User.tg_id == tg_id))).scalar_one_or_none()
         if user is None:
-            user = User(tg_id=tg_id, settings={})
-            s.add(user)
-            await s.flush()
+            try:
+                async with s.begin_nested():
+                    user = User(tg_id=tg_id, settings={})
+                    s.add(user)
+            except IntegrityError:  # параллельный запрос успел создать пользователя
+                user = (await s.execute(select(User).where(User.tg_id == tg_id))).scalar_one()
         return user
