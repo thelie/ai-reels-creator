@@ -16,6 +16,7 @@ from ..llm import client as llm
 from ..orchestrator.service import ReelsService
 from ..storage.db import Database
 from .handlers import router
+from .session import EnvProxySession, env_proxy
 
 log = logging.getLogger(__name__)
 
@@ -25,10 +26,12 @@ async def run() -> None:
     if not settings.telegram_token:
         raise SystemExit("Укажите REELS_TELEGRAM_TOKEN")
 
-    session = None
+    session_kwargs = {}
     if settings.telegram_api_base:
         # Локальный Bot API: файлы до 2 ГБ вместо 20 МБ на скачивание / 50 МБ на отправку
-        session = AiohttpSession(api=TelegramAPIServer.from_base(settings.telegram_api_base, is_local=True))
+        session_kwargs["api"] = TelegramAPIServer.from_base(settings.telegram_api_base, is_local=True)
+    session_cls = EnvProxySession if env_proxy() else AiohttpSession
+    session = session_cls(**session_kwargs) if session_kwargs or env_proxy() else None
     bot = Bot(settings.telegram_token, session=session)
 
     db = Database(settings.db_url)
