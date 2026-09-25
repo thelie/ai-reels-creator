@@ -233,7 +233,7 @@ def build_edl(draft: PlanDraft, media: MediaIndex, template: StyleTemplate, dura
         texts.append(TextOverlay(at=0.0, dur=round(hook_end - 0.02, 3), content=hook,
                                  style=tt.hook_style, pos=pos_for(clips[0]), anim=tt.anim))
         text_end = hook_end
-    cta = draft.cta_text.strip()
+    cta = draft.cta_text.strip() if tt.cta else ""
     for i, (sc, c) in enumerate(zip(scenes, clips)):
         is_last = i == len(clips) - 1
         content = cta if (is_last and cta) else sc.text.strip()

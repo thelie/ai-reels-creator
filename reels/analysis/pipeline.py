@@ -28,7 +28,7 @@ def _split_shot(start: float, end: float) -> list[tuple[float, float]]:
 
 
 PHRASE_GAP_S = 0.35
-MAX_SPEECH_SEGMENT_S = 7.0
+MAX_SPEECH_SEGMENT_S = 6.0
 
 
 def _split_by_speech(start: float, end: float, words: list[Word]) -> list[tuple[float, float]] | None:
@@ -47,6 +47,14 @@ def _split_by_speech(start: float, end: float, words: list[Word]) -> list[tuple[
             phrases.append([w])
         else:
             phrases[-1].append(w)
+    # Фраза длиннее лимита (говорят без пауз) — делим по самой большой паузе между словами
+    def split_long(ph: list[Word]) -> list[list[Word]]:
+        if len(ph) < 4 or ph[-1].t + ph[-1].d - ph[0].t <= MAX_SPEECH_SEGMENT_S:
+            return [ph]
+        k = max(range(1, len(ph) - 1), key=lambda i: ph[i].t - (ph[i - 1].t + ph[i - 1].d))
+        return split_long(ph[:k]) + split_long(ph[k:])
+
+    phrases = [p for ph in phrases for p in split_long(ph)]
     chunks: list[tuple[float, float]] = []
     cur_s = cur_e = None
     for ph in phrases:

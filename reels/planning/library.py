@@ -61,6 +61,8 @@ def from_reference(ref: ReferenceAnalysis, base: StyleTemplate | None = None) ->
     if labels:
         text = text.model_copy(update={"per_scene": True, "body_style": "label_script", "pos": "top",
                                        "anim": "fade"})
+    if ref.overlay_texts:
+        text = text.model_copy(update={"cta": any(t.role == "cta" for t in ref.overlay_texts)})
     captions = ref.has_captions if ref.has_captions is not None else ref.has_speech
     return base.model_copy(
         update={

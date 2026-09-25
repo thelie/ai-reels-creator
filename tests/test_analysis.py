@@ -55,3 +55,13 @@ def test_split_by_speech_cuts_at_pauses():
         for w in words:
             assert not (w.t < s < w.t + w.d) and not (w.t < e < w.t + w.d)
     assert _split_by_speech(0, 10, words[:2]) is None
+
+
+def test_long_phrase_without_pauses_is_split():
+    from reels.analysis.models import Word
+    from reels.analysis.pipeline import MAX_SPEECH_SEGMENT_S, _split_by_speech
+
+    # 40 слов подряд без пауз (~12 с), одна чуть большая пауза посередине
+    words = [Word(t=round(i * 0.3 + (0.2 if i >= 20 else 0), 2), d=0.28, w="слово") for i in range(40)]
+    chunks = _split_by_speech(0, 20, words)
+    assert len(chunks) >= 2 and all(e - s <= MAX_SPEECH_SEGMENT_S + 0.5 for s, e in chunks)

@@ -101,6 +101,8 @@ async def plan(analyses: list[AssetAnalysis], duration: float, script: str = "",
                 "hook_text: первая строка — короткая разговорная фраза (2–4 слова), вторая — 1–2 слова, "
                 "главная эмоция или суть; строки через \\n. Не копируй текст референса."
             )
+        if not template.text.cta:
+            parts.append("В референсе нет призыва к действию на экране — оставь cta_text пустым.")
         if template.text.body_style == "label_script":
             parts.append("Тексты сцен (text) — редкие подписи разделов, как в референсе (1–3 слова, например смена "
                          "темы); у большинства сцен text пустой.")

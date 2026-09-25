@@ -29,6 +29,7 @@ class TemplateText(BaseModel):
     hook_mode: Literal["timed", "sticker"] = "timed"
     sticker_example: str = ""  # стикер из референса, образец для LLM
     sticker_y: float = 0.62
+    cta: bool = True  # показывать призыв к действию (в шаблонах из референса — только если он там есть)
 
 
 class TemplateCaptions(BaseModel):
