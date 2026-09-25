@@ -5,14 +5,21 @@
 
 from __future__ import annotations
 
+import asyncio
+import logging
 import os
 import ssl
 
 from aiogram.__meta__ import __version__
 from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram.exceptions import TelegramNetworkError
 from aiohttp import ClientSession
 from aiohttp.hdrs import USER_AGENT
 from aiohttp.http import SERVER_SOFTWARE
+
+log = logging.getLogger(__name__)
+
+NETWORK_RETRIES = 3
 
 
 def env_proxy() -> str | None:
@@ -37,3 +44,14 @@ class EnvProxySession(AiohttpSession):
             )
             self._should_reset_connector = False
         return self._session
+
+    async def make_request(self, bot, method, timeout=None):
+        """Повтор при обрыве соединения: прокси закрывает простаивающие keep-alive соединения."""
+        for attempt in range(NETWORK_RETRIES):
+            try:
+                return await super().make_request(bot, method, timeout)
+            except TelegramNetworkError:
+                if attempt == NETWORK_RETRIES - 1:
+                    raise
+                log.warning("Telegram network error on %s, retry %d", type(method).__name__, attempt + 1)
+                await asyncio.sleep(0.5 * (attempt + 1))

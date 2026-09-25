@@ -102,3 +102,14 @@ async def test_concurrent_updates_share_one_project(svc):
 
     projects = await asyncio.gather(*(svc.current_project(tg_id=77, chat_id=77) for _ in range(8)))
     assert len({p.id for p in projects}) == 1
+
+
+async def test_failing_progress_does_not_break_plan(svc, media, tmp_path):
+    p = await svc.new_project(tg_id=11)
+    await _add(svc, p.id, media["photo"], "photo", tmp_path)
+
+    async def broken(msg):
+        raise ConnectionError("telegram is down")
+
+    board = await svc.plan(p.id, broken)
+    assert board.text.startswith("📋")

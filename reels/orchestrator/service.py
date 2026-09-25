@@ -39,6 +39,18 @@ async def _noop(_: str) -> None:
     return None
 
 
+def _safe(progress: Progress) -> Progress:
+    """Сбой отправки прогресса (сеть, Telegram) не должен прерывать анализ или рендер."""
+
+    async def wrapped(msg: str) -> None:
+        try:
+            await progress(msg)
+        except Exception:  # noqa: BLE001
+            log.warning("progress callback failed", exc_info=True)
+
+    return wrapped
+
+
 class UserError(RuntimeError):
     """Ошибка, которую можно показать пользователю как есть."""
 
@@ -255,6 +267,7 @@ class ReelsService:
     async def plan(self, pid: str, progress: Progress = _noop, instruction: str | None = None,
                    variant: bool = False) -> Storyboard:
         """Анализ (если нужен) + план + EDL. instruction — правка текстом, variant — другой вариант."""
+        progress = _safe(progress)
         async with self.lock(pid):
             p = await self.get(pid)
             if p.state in BUSY:
@@ -436,6 +449,7 @@ class ReelsService:
     # ---------- рендер ----------
 
     async def render(self, pid: str, quality: renderer.Quality = "preview", progress: Progress = _noop) -> Path:
+        progress = _safe(progress)
         async with self.lock(pid):
             p = await self.get(pid)
             if p.state in BUSY:

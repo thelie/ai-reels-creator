@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 
 from aiogram import Bot, F, Router
-from aiogram.exceptions import TelegramBadRequest
+from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
 from aiogram.filters import Command, CommandStart
 from aiogram.types import CallbackQuery, FSInputFile, InputMediaPhoto, Message
 
@@ -68,14 +68,14 @@ class ProgressMessage:
                 self.msg_id = (await self.bot.send_message(self.chat_id, text)).message_id
             else:
                 await self.bot.edit_message_text(text, chat_id=self.chat_id, message_id=self.msg_id)
-        except TelegramBadRequest:
-            pass
+        except TelegramAPIError:  # прогресс — не критичен, сетевые сбои не должны ронять задачу
+            log.warning("progress update failed", exc_info=True)
 
     async def done(self) -> None:
         if self.msg_id:
             try:
                 await self.bot.delete_message(self.chat_id, self.msg_id)
-            except TelegramBadRequest:
+            except TelegramAPIError:
                 pass
 
 
