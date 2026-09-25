@@ -35,3 +35,23 @@ def test_reference(media, tmp_path):
     ref = analyze_reference_sync(media["multi"], tmp_path)
     assert len(ref.shots) == 3
     assert abs(sum(s.dur for s in ref.shots) - 9.0) < 0.3
+
+
+def test_split_by_speech_cuts_at_pauses():
+    from reels.analysis.models import Word
+    from reels.analysis.pipeline import _split_by_speech
+
+    words = []
+    t = 0.5
+    for _phrase in range(4):  # 4 фразы по 6 слов, между фразами пауза 0.6 с
+        for _ in range(6):
+            words.append(Word(t=round(t, 2), d=0.3, w="слово"))
+            t += 0.35
+        t += 0.6
+    chunks = _split_by_speech(0, t + 1, words)
+    assert chunks and all(e - s <= 7.5 for s, e in chunks)
+    # Ни одна граница не попадает внутрь слова
+    for s, e in chunks:
+        for w in words:
+            assert not (w.t < s < w.t + w.d) and not (w.t < e < w.t + w.d)
+    assert _split_by_speech(0, 10, words[:2]) is None

@@ -27,6 +27,47 @@ def _split_shot(start: float, end: float) -> list[tuple[float, float]]:
     return [(start + i * step, start + (i + 1) * step) for i in range(n)]
 
 
+PHRASE_GAP_S = 0.35
+MAX_SPEECH_SEGMENT_S = 7.0
+
+
+def _split_by_speech(start: float, end: float, words: list[Word]) -> list[tuple[float, float]] | None:
+    """Режем дубль с речью по паузам между фразами, чтобы склейки не рвали слова.
+
+    Фразы = слова, разделённые паузой ≥ PHRASE_GAP_S или концом предложения; соседние фразы
+    склеиваются в куски до MAX_SPEECH_SEGMENT_S. None — если речи в дубле почти нет.
+    """
+    ws = [w for w in words if start <= w.t < end]
+    if len(ws) < 3:
+        return None
+    phrases: list[list[Word]] = [[ws[0]]]
+    for prev, w in zip(ws, ws[1:]):
+        gap = w.t - (prev.t + prev.d)
+        if gap >= PHRASE_GAP_S or prev.w.rstrip().endswith((".", "!", "?", "…")):
+            phrases.append([w])
+        else:
+            phrases[-1].append(w)
+    chunks: list[tuple[float, float]] = []
+    cur_s = cur_e = None
+    for ph in phrases:
+        ps, pe = ph[0].t, ph[-1].t + ph[-1].d
+        if cur_s is None:
+            cur_s, cur_e = ps, pe
+        elif pe - cur_s <= MAX_SPEECH_SEGMENT_S:
+            cur_e = pe
+        else:
+            chunks.append((cur_s, cur_e))
+            cur_s, cur_e = ps, pe
+    chunks.append((cur_s, cur_e))
+    # Небольшие поля вокруг речи, не выходя за соседние куски и границы дубля
+    out = []
+    for i, (s, e) in enumerate(chunks):
+        lo = max(start, chunks[i - 1][1] if i else start, s - 0.12)
+        hi = min(end, chunks[i + 1][0] if i + 1 < len(chunks) else end, e + 0.2)
+        out.append((round(lo, 3), round(hi, 3)))
+    return out
+
+
 def prepare_asset(asset_id: str, path: Path, work_dir: Path) -> tuple[ffmpeg.ProbeInfo, Path]:
     """Нормализация + прокси. Возвращает (probe оригинала, путь к прокси)."""
     work_dir.mkdir(parents=True, exist_ok=True)
@@ -58,7 +99,8 @@ def analyze_video_sync(asset_id: str, path: Path, work_dir: Path, transcribe: bo
 
     segments: list[Segment] = []
     for shot in shots:
-        for s, e in _split_shot(shot.start, min(shot.end, duration)):
+        shot_end = min(shot.end, duration)
+        for s, e in _split_by_speech(shot.start, shot_end, words) or _split_shot(shot.start, shot_end):
             if e - s < 0.3:
                 continue
             frames = [f for f in shot.frames if s <= f.t < e] or shot.frames
@@ -81,7 +123,7 @@ def analyze_video_sync(asset_id: str, path: Path, work_dir: Path, transcribe: bo
                     anchor_x=round(ax, 3),
                     anchor_y=round(ay, 3),
                     faces=faces,
-                    has_speech=len(seg_words) >= max(2, int((e - s) * 0.8)),
+                    has_speech=len(seg_words) >= max(2, int((e - s) * 0.6)),
                     transcript=" ".join(x.w for x in seg_words),
                     words=seg_words,
                 )
